@@ -5,6 +5,7 @@ using namespace websockets;
 WebsocketsClient websocket;
 
 bool websocketConnected = false;
+String socketUrl = "ws://192.168.1.2:8001/ws";
 
 void init_websocket(){
   Serial.println("[Websocket] Connecting to server...");
@@ -28,12 +29,12 @@ void init_websocket(){
     Serial.println(message.data());
   });
 
-  websocket.connect("ws://93.127.195.143:8001/ws");
+  websocket.connect(socketUrl);
 }
 
 void push_websocket(String level, String rainfall, String lat, String lng){
   if (!websocketConnected) {
-    websocket.connect("ws://93.127.195.143:8001/ws");
+    websocket.connect(socketUrl);
   }
 
   if (!websocket.available()) {

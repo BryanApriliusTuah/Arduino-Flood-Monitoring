@@ -5,7 +5,7 @@
 #define USE_WIFI // Comment baris ini jika hanya ingin pakai GSM
 // =========================
 
-const char server[] = "localhost";
+const char server[] = "192.168.1.2";
 const int port = 3000;
 String API = "/api/elevations";
 
