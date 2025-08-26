@@ -1,3 +1,5 @@
+String LevelUrl = "http://192.168.1.2:3000/api/level";
+
 void push_server(String level ,String lat, String lng) {
   String jsonPayload = "{\"elevation\":" + level + ",\"latitude\":\"" + lat + "\",\"longitude\":\"" + lng + "\"}";
 
@@ -86,11 +88,10 @@ void push_level(String normal, String banjir){
   }
 
   HTTPClient http;
-  String url = "http://localhost:3000/api/level";
 
   // ============ HTTP POST JSON ============
 
-  http.begin(url);
+  http.begin(LevelUrl);
   http.addHeader("Content-Type", "application/json");
   int responseCode = http.PUT(jsonPayload);
   String response = http.getString();
