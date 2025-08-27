@@ -5,7 +5,7 @@ using namespace websockets;
 WebsocketsClient websocket;
 
 bool websocketConnected = false;
-String socketUrl = "ws://192.168.1.2:8001/ws";
+String socketUrl = "ws://192.168.1.9:8001/ws";
 
 void init_websocket(){
   Serial.println("[Websocket] Connecting to server...");
@@ -43,12 +43,6 @@ void push_websocket(String level, String rainfall, String lat, String lng){
   }
 
   Serial.println("[Websocket] Sending data...");
-  // String jsonWebsocket = "{";
-  // jsonWebsocket += "\"elevation\":" + level + ",";
-  // jsonWebsocket += "\"curah_hujan\":" + rainfall + ",";
-  // jsonWebsocket += "\"latitude\":\"" + lat + "\",";
-  // jsonWebsocket += "\"longitude\":\"" + lng + "\"";
-  // jsonWebsocket += "}";
-  String jsonWebsocket = "{\"elevation\":" + level + ",\"curah_hujan\":" + rainfall + ",\"latitude\":\"" + lat + "\",\"longitude\":\"" + lng + "\"}";
+  String jsonWebsocket = "{\"hardwareId\": 1 ,\"elevation\":" + level + ",\"curah_hujan\":" + rainfall + ",\"latitude\":\"" + lat + "\",\"longitude\":\"" + lng + "\"}";
   websocket.send(jsonWebsocket);
 }
