@@ -17,7 +17,7 @@ void TaskSocket( void *pvParameters );
 void TaskServer( void *pvParameters );
 TaskHandle_t analog_read_task_handle;
 
-String normal = "0.00";
+String siaga = "0.00";
 String banjir = "0.00";
 
 uint8_t max_attempts = 20;
@@ -58,20 +58,29 @@ void TaskSocket(void *pvParameters) {
   init_rain_gauge();
   init_websocket();
 
-  while ((normal == "0.00" || banjir == "0.00") && attempts < max_attempts) {
+  while ((siaga == "0.00" || banjir == "0.00") && attempts < max_attempts) {
     delay(1000);
-    normal = String(level_normal());
+    siaga = String(level_siaga());
     banjir = String(level_banjir());
-    Serial.print("[Retry] Normal: "); Serial.print(normal);
+    Serial.print("[Retry] siaga: "); Serial.print(siaga);
     Serial.print(" | Banjir: "); Serial.println(banjir);
     attempts++;
   }
 
   if (attempts >= max_attempts) {
-    Serial.println("[WARNING] Level values not valid after retries. Proceeding anyway.");
-  } 
+    Serial.println("[WARNING] Level values not valid after retries.");
+  } else {
+    push_level(siaga, banjir);
+  }
 
-  push_level(normal, banjir);
+
+  // Delay 10 seconds after pushing level, with countdown
+  char buffer[64];
+  for (int i = 10; i > 0; i--) {
+    sprintf(buffer, "[INFO] Device will be activated in %d seconds", i);
+    push_timeReadySocket(buffer);
+    vTaskDelay(pdMS_TO_TICKS(1000)); // wait 1 second
+  }
 
   int counter = 0;
 
@@ -91,7 +100,7 @@ void TaskSocket(void *pvParameters) {
       read_gps(); 
       Serial.println("[Task Socket] Send data to website...");
       Serial.print("Rainfall: "); Serial.println(read_rainfall());
-      push_websocket(String(read_level()), String(read_rainfall()), getLat(), getLng()); Serial.println("");
+      push_websocket(String(read_level()), String(read_rainfall()), siaga, banjir, getLat(), getLng()); Serial.println("");
 
       state_led = !state_led;
       digitalWrite(ledPin, state_led);

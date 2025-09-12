@@ -1,4 +1,4 @@
-String LevelUrl = "http://192.168.1.9:3000/api/level";
+String LevelUrl = "http://192.168.1.4:3000/api/level";
 
 void push_server(String level ,String lat, String lng) {
   String jsonPayload = "{\"elevation\":" + level + ",\"latitude\":\"" + lat + "\",\"longitude\":\"" + lng + "\",\"hardwareId\": 1}";
