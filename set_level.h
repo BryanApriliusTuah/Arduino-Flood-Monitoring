@@ -1,5 +1,9 @@
+uint8_t e_mea = 2; // Seberapa kita percaya bahwa sensor punya noise (biasanya ±2 cm untuk ultrasonic)
+uint8_t e_est = 2; // Seberapa yakin kita sama tebakan awal (samakan dengan e_mea, nilai otomatis melakukan penyesuaian seiring waktu)
+uint8_t q = 1; // Seberapa cepat dunia nyata bisa berubah, dan filter harus mengikutinya (0.001 s.d 1)
+
 #include <SimpleKalmanFilter.h>
-SimpleKalmanFilter simpleKalmanFilter(2, 2, 0.01);
+SimpleKalmanFilter simpleKalmanFilter(e_mea, e_est, q);
 
 #define MAX_RXD 18
 #define MAX_TXD 17
@@ -55,12 +59,12 @@ float read_level() {
   return estimated_level;
 }
 
-float level_normal(){
-  float normal = read_level();
-  return normal + 10;
+float level_siaga(){
+  float banjir = read_level();
+  return banjir + 10;
 }
 
 float level_banjir(){
-  float normal = read_level();
-  return normal;
+  float banjir = read_level();
+  return banjir;
 }
