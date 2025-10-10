@@ -36,7 +36,6 @@ float read_level() {
         int distance_mm = (data[1] << 8) | data[2];
         if (distance_mm > 280) { // Lower limit filter
           distance_cm = distance_mm / 10.0;
-          estimated_level = distance_cm;
           float filtered = simpleKalmanFilter.updateEstimate(distance_cm);
 
           if (filtered != 0.0) {
@@ -53,6 +52,7 @@ float read_level() {
     } else {
       // Discard garbage byte
       mySerial.read();
+      vTaskDelay(1);
     }
   }
 
@@ -67,4 +67,9 @@ float level_siaga(){
 float level_banjir(){
   float banjir = read_level();
   return banjir;
+}
+
+String check_ultrasonic(){
+  float jarak = read_level();
+  return "Jarak Sensor Ultrasonik: " + String(jarak) + " cm";
 }
