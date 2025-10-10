@@ -1,11 +1,10 @@
-// set_gsm.h with WiFiManager and GSM fallback
 #pragma once
 
 // ====== PILIH MODE ======
 #define USE_WIFI // Comment baris ini jika hanya ingin pakai GSM
 // =========================
 
-const char server[] = "192.168.1.4";
+const char server[] = "srv1036121.hstgr.cloud";
 const int port = 3000;
 String API = "/api/elevations";
 
@@ -38,47 +37,155 @@ void init_wifi() {
 #define SerialMon Serial
 #define SerialAT Serial2
 
+// #define TINY_GSM_DEBUG SerialMon 
 #define TINY_GSM_MODEM_SIM7600
+
 #include <TinyGsmClient.h>
 #include <ArduinoHttpClient.h>
 
-const char apn[]      = "Internet";
+const char apn[]      = "internet"; // ganti sesuai provider
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
-TinyGsm modem(SerialAT);
-TinyGsmClient client(modem);
-HttpClient http(client, server, port);
+TinyGsm* modem = NULL;
+TinyGsmClient* client = NULL;
+HttpClient* http = NULL;
 
 void init_gsm() {
+  Serial.println("[GSM] Step 1: Setting up pins...");
   pinMode(RST, OUTPUT);
   pinMode(PKEY, OUTPUT);
-  SerialAT.begin(38400, SERIAL_8N1, RXD2, TXD2);
+  
+  // Ensure pins start in known state
+  digitalWrite(RST, HIGH);
+  digitalWrite(PKEY, HIGH);
+  delay(100);
+  
+  Serial.println("[GSM] Step 2: Power on sequence...");
+  // PKEY pulse to power on (if modem is off)
+  // Pull PKEY low for 1-2 seconds to turn on
+  digitalWrite(PKEY, LOW);
+  delay(1500);
+  digitalWrite(PKEY, HIGH);
+  delay(100);
+  
+  Serial.println("[GSM] Step 3: Waiting for modem boot (5s)...");
+  delay(5000); // SIM7600 needs time to boot up
+  
+  Serial.println("[GSM] Step 4: Starting Serial...");
+  SerialAT.begin(115200, SERIAL_8N1, RXD2, TXD2);
+  delay(1000); // Give serial time to stabilize
+
+  Serial.println("[GSM] Step 5: Creating modem object...");
+  modem  = new TinyGsm(SerialAT);
+  
+  Serial.println("[GSM] Step 6: Creating client objects...");
+  client = new TinyGsmClient(*modem);
+  http   = new HttpClient(*client, server, port);
+
+  Serial.println("[GSM] Init done");
 }
 
-void wakeup_sim() {
-  SerialMon.println("[GSM] Wakeup SIM7600...");
-  digitalWrite(PKEY, LOW); digitalWrite(RST, LOW); delay(1000);
-  digitalWrite(PKEY, HIGH); digitalWrite(RST, HIGH); delay(1000);
-  digitalWrite(PKEY, LOW); digitalWrite(RST, LOW); delay(1000);
-
-  byte _retry = 0;
-  Serial.println("[GSM] Menunggu AT Response...");
-  while (!_at_ok("AT", "OK", 1000) && _retry < 20) {
-    Serial.println("Retry: " + String(_retry++));
+bool init_gsm_network() {
+  Serial.println("[GSM] === Starting Network Init ===");
+  
+  Serial.println("[GSM] Step 1: Restarting modem...");
+  Serial.flush(); // Ensure message is printed
+  delay(100);
+  
+  // Try a softer approach first - don't restart if modem is already on
+  String modemInfo = modem->getModemInfo();
+  Serial.print("[GSM] Modem Info: ");
+  Serial.println(modemInfo);
+  
+  if (modemInfo.length() > 0) {
+    Serial.println("[GSM] Modem already responding, skipping restart");
+  } else {
+    Serial.println("[GSM] Modem not responding, attempting restart...");
+    
+    // Hardware reset using RST pin
+    digitalWrite(RST, LOW);
+    delay(100);
+    digitalWrite(RST, HIGH);
+    delay(3000); // Wait for modem to boot
+    
+    Serial.println("[GSM] Hardware reset complete");
   }
-  String info = modem.getModemInfo();
-  SerialMon.println("Modem Info: " + info);
-}
+  
+  Serial.println("[GSM] Step 2: Initializing modem...");
+  Serial.flush();
+  delay(100);
+  
+  // Test basic communication first
+  Serial.println("[GSM] Testing AT communication...");
+  SerialAT.println("AT");
+  delay(1000);
+  
+  if (SerialAT.available()) {
+    String response = SerialAT.readString();
+    Serial.print("[GSM] AT Response: ");
+    Serial.println(response);
+  } else {
+    Serial.println("[GSM] WARNING: No AT response - modem may not be ready");
+    delay(3000); // Give more time
+  }
+  
+  Serial.println("[GSM] Calling modem.init()...");
+  bool initResult = modem->init();
+  
+  if (!initResult) {
+    Serial.println("[GSM] ERROR: Modem init returned false!");
+    return false;
+  }
+  Serial.println("[GSM] Modem init OK");
 
-bool _at_ok(const char* cmd, const char* expected, uint16_t timeout) {
-  SerialAT.println(cmd);
+  Serial.println("[GSM] Step 3: Waiting for network (60s timeout)...");
+  Serial.flush();
+  
+  // Wait with periodic status updates
   unsigned long start = millis();
-  String res = "";
-  while (millis() - start < timeout) {
-    if (SerialAT.available()) res += char(SerialAT.read());
-    if (res.indexOf(expected) >= 0) return true;
+  while (!modem->isNetworkConnected() && (millis() - start < 60000)) {
+    Serial.print(".");
+    delay(2000);
   }
+  Serial.println();
+  
+  if (!modem->isNetworkConnected()) {
+    Serial.println("[GSM] ERROR: Network not found after 60s");
+    return false;
+  }
+  
+  Serial.println("[GSM] Network OK");
+  Serial.print("[GSM] Signal quality: ");
+  Serial.println(modem->getSignalQuality());
+
+  Serial.println("[GSM] Step 4: Connecting GPRS...");
+  for (int i=0; i<5; i++) {
+    Serial.print("[GSM] GPRS attempt ");
+    Serial.print(i+1);
+    Serial.println("/5");
+    Serial.flush();
+    
+    if (modem->gprsConnect(apn, gprsUser, gprsPass)) {
+      Serial.println("[GSM] GPRS connected successfully!");
+      Serial.print("[GSM] Local IP: ");
+      Serial.println(modem->localIP());
+      return true;
+    }
+    
+    Serial.println("[GSM] GPRS retry failed, waiting...");
+    delay(5000);
+  }
+  
+  Serial.println("[GSM] ERROR: GPRS connection failed after 5 attempts");
   return false;
 }
+
+void check_gsm_network() {
+  if (!modem->isGprsConnected()) {
+    SerialMon.println("[GSM] GPRS dropped. Reconnecting...");
+    modem->gprsConnect(apn, gprsUser, gprsPass);
+  }
+}
+
 #endif
