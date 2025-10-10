@@ -45,6 +45,7 @@ void read_gps() {
       displayInfo();
       printed = true;
     }
+    vTaskDelay(1);
 }
 
 String getLat(){
