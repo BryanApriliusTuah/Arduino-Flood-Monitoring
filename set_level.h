@@ -1,6 +1,6 @@
 uint8_t e_mea = 2; // Seberapa kita percaya bahwa sensor punya noise (biasanya ±2 cm untuk ultrasonic)
 uint8_t e_est = 2; // Seberapa yakin kita sama tebakan awal (samakan dengan e_mea, nilai otomatis melakukan penyesuaian seiring waktu)
-uint8_t q = 1; // Seberapa cepat dunia nyata bisa berubah, dan filter harus mengikutinya (0.001 s.d 1)
+uint8_t q = 0.8; // Seberapa cepat dunia nyata bisa berubah, dan filter harus mengikutinya (0.001 s.d 1)
 
 #include <SimpleKalmanFilter.h>
 SimpleKalmanFilter simpleKalmanFilter(e_mea, e_est, q);
