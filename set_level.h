@@ -61,7 +61,7 @@ float read_level() {
 
 float level_siaga(){
   float banjir = read_level();
-  return banjir + 10;
+  return banjir + 30;
 }
 
 float level_banjir(){
