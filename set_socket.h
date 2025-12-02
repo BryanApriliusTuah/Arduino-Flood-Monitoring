@@ -3,7 +3,7 @@
 #include <WebSocketsClient.h> 
 #include "set_internet.h" 
 
-const char* websocket_host = "srv1036121.hstgr.cloud";
+const char* websocket_host = "192.168.43.218";
 const int websocket_port = 8001;
 const char* websocket_path = "/ws";
 
