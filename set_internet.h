@@ -4,7 +4,7 @@
 #define USE_WIFI // Comment baris ini jika hanya ingin pakai GSM
 // =========================
 
-const char server[] = "srv1036121.hstgr.cloud";
+const char server[] = "192.168.43.218";
 const int port = 3000;
 String API = "/api/elevations";
 
@@ -16,8 +16,51 @@ String API = "/api/elevations";
 
 WiFiManager wm;
 
+// Prioritas WiFi - akan dicoba berurutan
+struct WiFiCredentials {
+  const char* ssid;
+  const char* password;
+};
+
+const WiFiCredentials priorityWiFi[] = {
+  {"Ayen", "aleapril123"},
+  {"Redmi Note 8 Pro", "AyenAyen"}
+};
+const int numPriorityWiFi = 2;
+
 void init_wifi() {
-  Serial.println("[WiFi] Mencoba konek otomatis...");
+  // Coba koneksi ke WiFi prioritas satu per satu
+  for (int i = 0; i < numPriorityWiFi; i++) {
+    Serial.print("[WiFi] Mencoba: ");
+    Serial.println(priorityWiFi[i].ssid);
+    
+    WiFi.begin(priorityWiFi[i].ssid, priorityWiFi[i].password);
+    
+    // Tunggu maksimal 10 detik untuk setiap WiFi
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+      delay(500);
+      Serial.print(".");
+      attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println();
+      Serial.print("[WiFi] Tersambung ke: ");
+      Serial.println(priorityWiFi[i].ssid);
+      Serial.print("[WiFi] IP Address: ");
+      Serial.println(WiFi.localIP());
+      return;
+    }
+    
+    Serial.println(" Gagal!");
+    WiFi.disconnect();
+  }
+  
+  // Jika semua WiFi prioritas gagal, gunakan WiFiManager
+  Serial.println("[WiFi] Semua jaringan prioritas gagal.");
+  Serial.println("[WiFi] Menggunakan WiFiManager untuk setup manual...");
+  
   bool res = wm.autoConnect("ESP32-Setup");
   if (!res) {
     Serial.println("[WiFi] Gagal konek. Restart...");
@@ -25,6 +68,8 @@ void init_wifi() {
     ESP.restart();
   } else {
     Serial.println("[WiFi] Tersambung ke jaringan!");
+    Serial.print("[WiFi] IP Address: ");
+    Serial.println(WiFi.localIP());
   }
 }
 
