@@ -5,7 +5,7 @@ float milimeter_per_tip = 0.30;
 volatile unsigned long last_interrupt_time = 0;
 
 unsigned long last_reset_time = 0;
-const unsigned long RESET_INTERVAL = 24UL * 60UL * 60UL * 1000UL;  // 24 jam dalam ms
+const unsigned long RESET_INTERVAL = 60UL * 60UL * 1000UL;  // 1 jam dalam ms
 
 void ICACHE_RAM_ATTR tipping(){
   unsigned long now = millis();
@@ -37,7 +37,7 @@ void check_and_reset_rainfall() {
     tip_count = 0;
     interrupts();
     last_reset_time = now;
-    Serial.println("[RainGauge] Curah hujan telah direset setelah 1 hari");
+    Serial.println("[RainGauge] Curah hujan telah direset setelah 1 jam");
   }
 }
 
